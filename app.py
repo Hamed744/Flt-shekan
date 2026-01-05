@@ -3,10 +3,8 @@ import subprocess
 import threading
 from http.server import SimpleHTTPRequestHandler, HTTPServer
 
-# دریافت مسیر 
 CURRENT_DIR = os.getcwd()
 
-# 1. ساخت سای
 html_content = """<!DOCTYPE html>
 <html>
 <head><title>System Status</title>
@@ -19,7 +17,7 @@ h1{color:#1a73e8;} .ok{color:#34a853;font-weight:bold;}</style></head>
 with open("index.html", "w") as f:
     f.write(html_content)
 
-# 2. تنظیمات Ng
+# اینجا listen 7860 به listen 10000 تغییر کرده است
 nginx_conf = f"""
 worker_processes 1;
 daemon off;
@@ -35,7 +33,7 @@ http {{
     scgi_temp_path /tmp/scgi;
 
     server {{
-        listen 7860;
+        listen 10000;
         root {CURRENT_DIR};
         index index.html;
 
@@ -58,7 +56,6 @@ http {{
 with open("nginx.conf", "w") as f:
     f.write(nginx_conf)
 
-# 3. تنظیمات Xray (روی پورت 3000)
 xray_config = """
 {
   "log": { "loglevel": "none" },
@@ -91,13 +88,7 @@ xray_config = """
 with open("config.json", "w") as f:
     f.write(xray_config)
 
-# 4. اجرای سس‌ها
-print(f"Working Directory: {CURRENT_DIR}")
-
-# اجرای ay
 subprocess.Popen(["./xray", "-c", "config.json"])
 
-# اجرای Ng
 nginx_config_path = os.path.join(CURRENT_DIR, "nginx.conf")
-print(f"Starting Nginx using config: {nginx_config_path}")
 subprocess.run(["nginx", "-c", nginx_config_path])
