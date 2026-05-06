@@ -1,12 +1,10 @@
 import os
 import subprocess
-import threading
-from http.server import SimpleHTTPRequestHandler, HTTPServer
 
 # دریافت مسیر 
 CURRENT_DIR = os.getcwd()
 
-# 1. ساخت سای
+# 1. ساخت سایت (صفحه جعلی برای رد گم کنی Nginx)
 html_content = """<!DOCTYPE html>
 <html>
 <head><title>System Status</title>
@@ -19,7 +17,7 @@ h1{color:#1a73e8;} .ok{color:#34a853;font-weight:bold;}</style></head>
 with open("index.html", "w") as f:
     f.write(html_content)
 
-# 2. تنظیمات Ng
+# 2. تنظیمات Nginx (گوش دادن روی پورت ۳۰۰۰ و انتقال مسیر /vl به ۸۰۸۰)
 nginx_conf = f"""
 worker_processes 1;
 daemon off;
@@ -35,7 +33,7 @@ http {{
     scgi_temp_path /tmp/scgi;
 
     server {{
-        listen 7860;
+        listen 3000;
         root {CURRENT_DIR};
         index index.html;
 
@@ -45,7 +43,7 @@ http {{
 
         location /vl {{
             proxy_redirect off;
-            proxy_pass http://127.0.0.1:3000;
+            proxy_pass http://127.0.0.1:8080;
             proxy_http_version 1.1;
             proxy_set_header Upgrade $http_upgrade;
             proxy_set_header Connection "upgrade";
@@ -58,13 +56,13 @@ http {{
 with open("nginx.conf", "w") as f:
     f.write(nginx_conf)
 
-# 3. تنظیمات Xray (روی پورت 3000)
+# 3. تنظیمات Xray (گوش دادن روی پورت داخلی ۸۰۸۰)
 xray_config = """
 {
   "log": { "loglevel": "none" },
   "inbounds": [
     {
-      "port": 3000,
+      "port": 8080,
       "listen": "127.0.0.1",
       "protocol": "vless",
       "settings": {
@@ -91,13 +89,13 @@ xray_config = """
 with open("config.json", "w") as f:
     f.write(xray_config)
 
-# 4. اجرای سس‌ها
+# 4. اجرای سرویس‌ها
 print(f"Working Directory: {CURRENT_DIR}")
 
-# اجرای ay
+# اجرای Xray
 subprocess.Popen(["./xray", "-c", "config.json"])
 
-# اجرای Ng
+# اجرای Nginx
 nginx_config_path = os.path.join(CURRENT_DIR, "nginx.conf")
 print(f"Starting Nginx using config: {nginx_config_path}")
 subprocess.run(["nginx", "-c", nginx_config_path])
