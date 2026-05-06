@@ -14,6 +14,7 @@ RUN wget https://github.com/XTLS/Xray-core/releases/download/v1.8.4/Xray-linux-6
 
 COPY app.py .
 
-EXPOSE 7860
+# باز کردن پورت ۳۰۰۰ برای رانفلر
+EXPOSE 3000
 
 CMD ["python", "app.py"]
